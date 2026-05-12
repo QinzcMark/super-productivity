@@ -3,24 +3,30 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-24.04-arm
     steps:
-      - name: 检出代码 (Checkout code)
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 Node.js 环境 (Setup Node.js)
+      - name: 设置 Node.js 环境
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: 安装依赖并构建 (Install & Build)
+      - name: 安装系统依赖（electron-builder 需要 ruby 来运行 fpm）
+        run: sudo apt-get update && sudo apt-get install -y ruby-dev
+
+      - name: 安装 npm 依赖并打包
         run: |
+          npm config set registry https://registry.npmmirror.com
           npm install
           npm run electron:build -- --linux deb --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
 
-      - name: 上传构建产物 (Upload Artifact)
+      - name: 上传 .deb 包
         uses: actions/upload-artifact@v4
         with:
           name: super-productivity-linux-arm64-deb
